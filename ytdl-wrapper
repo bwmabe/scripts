@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+import subprocess as sp
+import sys
+import shlex
+
+
+def get_videos(links, options=None):
+    failed = []
+
+    for link in links:
+        command = "youtube-dl {} \"{}\"".format(" ".join(options), link)
+        print(command)
+        # exit(0)
+
+        try:
+            with sp.Popen(command,
+                          stdout=sp.PIPE,
+                          bufsize=1,
+                          shell=True,
+                          universal_newlines=True) as process:
+                for line in process.stdout:
+                    print(line, end="")
+        except KeyboardInterrupt:
+            exit(0)
+        finally:
+            failed.append(link)
+
+    if failed:
+        f = open("failed_links.txt", "w")
+
+        for i in failed:
+            f.write(i + "\n")
+
+        f.close()
+
+
+def from_file(filename, options):
+    f = open(filename, "r")
+    get_videos(f.read().split(), options)
+    f.close()
+
+
+def main(argc, argv):
+    options = []
+    if argc < 1:
+        print("USAGE: ytdl-wrapper [OPTIONS] URLS")
+        print("     : ytdl-wrapper -F FILENAME [OPTIONS]")
+        print("OPTIONS: -F : Get from file, must be passed first")
+        print("         -f : video format options, passed to youtube-dl")
+        print("         -o : title format options, passed to youtube-dl")
+        exit(1)
+
+    processing_args = False
+
+    videos = []
+
+    for arg in argv:
+        if "-" in arg:
+            if not processing_args:
+                if arg != "-F":
+                    options.append(arg)
+                    processing_args = True
+                else:
+                    processing_args = False
+            else:
+                options.append(arg)
+        elif "http" in arg:
+            processing_args = False
+            videos.append(arg)
+        else:
+            options.append("'" + arg + "'")
+
+    if argv[0] == "-F":
+        if argc < 2:
+            print("Must provide filename with -F")
+            exit(2)
+        from_file(argv[1], options[1:])
+        exit(0)
+    else:
+        no_links = True
+        for i in argv:
+            if 'http' in i:
+                no_links = False
+        if no_links:
+            print("Arguments must be a list of URLS if -F isn't used")
+            exit(2)
+        else:
+            get_videos(videos, options)
+
+
+argc, argv = (len(sys.argv) - 1, sys.argv[1:])
+
+main(argc, argv)
