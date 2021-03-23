@@ -1,94 +1,83 @@
 #!/usr/bin/env python3
 
 import subprocess as sp
+import argparse
 import sys
+import typing
 import shlex
 
 
-def get_videos(links, options=None):
-    failed = []
+def get_videos(links: typing.List[str], format_options: str = "",
+               title_options: str = "",
+               restrict_filenames: bool = False) -> None:
+    failed: typing.List[str] = []
+    base_command = "youtube-dl"
+
+    if format_options:
+        base_command += ' -f "{}" '.format(format_options)
+
+    if title_options:
+        base_command += ' -o "{}" '.format(title_options)
+
+    if restrict_filenames:
+        base_command += ' --restrict_filenames '
 
     for link in links:
-        command = "youtube-dl {} \"{}\"".format(" ".join(options), link)
-        print(command)
-        # exit(0)
-
+        command = base_command + '"' + link + '"'
+        print('Getting "{}"...'.format(link))
         try:
             with sp.Popen(command,
                           stdout=sp.PIPE,
-                          bufsize=1,
-                          shell=True,
-                          universal_newlines=True) as process:
+                          universal_newlines=True,
+                          shell=True) as process:
                 for line in process.stdout:
-                    print(line, end="")
+                    print(str(line[:-1]), end="\r")
         except KeyboardInterrupt:
             exit(0)
         finally:
             failed.append(link)
 
     if failed:
-        f = open("failed_links.txt", "w")
-
-        for i in failed:
-            f.write(i + "\n")
-
-        f.close()
+        with open("failed_links.txt", "w") as f:
+            for i in failed:
+                f.write(i + "\n")
 
 
-def from_file(filename, options):
-    f = open(filename, "r")
-    get_videos(f.read().split(), options)
-    f.close()
+def from_file(filename: str, format_options: str = "", title_options: str = "",
+              restrict_filenames: bool = False) -> None:
+    with open(filename, "r") as input_file:
+        uris = input_file.read.split()
+        get_videos(uris, format_options, title_options, restrict_filenames)
 
 
-def main(argc, argv):
-    options = []
-    if argc < 1:
-        print("USAGE: ytdl-wrapper [OPTIONS] URLS")
-        print("     : ytdl-wrapper -F FILENAME [OPTIONS]")
-        print("OPTIONS: -F : Get from file, must be passed first")
-        print("         -f : video format options, passed to youtube-dl")
-        print("         -o : title format options, passed to youtube-dl")
+def main(argv: typing.List) -> None:
+    parser = argparse.ArgumentParser(description='Download a list of videos')
+    parser.add_argument('-F', metavar='FILE', type=str,
+                        help='read a list of videos from a file')
+    parser.add_argument('-f', metavar='FORMAT_OPTIONS', type=str,
+                        help='youtube-dl video format options')
+    parser.add_argument('-o', metavar='TITLE_FORMAT', type=str,
+                        help='youtube-dl title format string')
+    parser.add_argument('--restrict-filenames', action='store_true',
+                        help='''
+                        pass the "--restrict-filenames" directive to
+                        youtube-dl
+                        ''')
+    parser.add_argument('input_uris', metavar='MEDIA_URI', type=str, nargs='*',
+                        help='a list of URIs that point to a page with media')
+    args = parser.parse_args(argv)
+
+    if args.input_uris:  # If args.input_uris is *not* empty
+        if args.F is not None:  # If both STDIN and a file are supplied, quit
+            print("ytdl-wrapper: error: cannot read from both file and STDIN")
+            exit(1)
+        # Otherwise, get the media files pointed to by args.input_uris
+        get_videos(args.input_uris, args.f, args.o, args.restrict_filenames)
+    elif args.F is None:  # If args.input_uris is empty and args.F is None
+        print("ytdl-wrapper: error: no input URIs provided")
         exit(1)
-
-    processing_args = False
-
-    videos = []
-
-    for arg in argv:
-        if "-" in arg:
-            if not processing_args:
-                if arg != "-F":
-                    options.append(arg)
-                    processing_args = True
-                else:
-                    processing_args = False
-            else:
-                options.append(arg)
-        elif "http" in arg:
-            processing_args = False
-            videos.append(arg)
-        else:
-            options.append("'" + arg + "'")
-
-    if argv[0] == "-F":
-        if argc < 2:
-            print("Must provide filename with -F")
-            exit(2)
-        from_file(argv[1], options[1:])
-        exit(0)
-    else:
-        no_links = True
-        for i in argv:
-            if 'http' in i:
-                no_links = False
-        if no_links:
-            print("Arguments must be a list of URLS if -F isn't used")
-            exit(2)
-        else:
-            get_videos(videos, options)
+    else:  # If args.input_uris is empty and args.F is *not* None
+        from_file(args.F, args.f, args.o, args.restrict_filenames)
 
 
-argc, argv = (len(sys.argv) - 1, sys.argv[1:])
-
-main(argc, argv)
+main(sys.argv[1:])
