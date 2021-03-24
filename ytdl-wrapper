@@ -3,14 +3,14 @@
 import subprocess as sp
 import argparse
 import sys
-import typing
-import shlex
+
+from typing import List, Union
 
 
-def get_videos(links: typing.List[str], format_options: str = "",
+def get_videos(links: List[str], format_options: str = "",
                title_options: str = "",
-               restrict_filenames: bool = False) -> None:
-    failed: typing.List[str] = []
+               restrict_filenames: bool = False) -> Union[List[str], int]:
+    failed: List[str] = []
     base_command = "youtube-dl"
 
     # Pass video formatting options to youtube-dl if they were defined
@@ -39,24 +39,24 @@ def get_videos(links: typing.List[str], format_options: str = "",
                     try:
                         # Print stdout output from the youtube-dl process
                         for line in process.stdout:
-                            print("\r" + str(line.rstrip()), end="")
+                            string = str(line.rstrip())
+                            print("\r" + string, end="")
                     finally:
                         # unhide the cursor if the above loop fails somehow
                         print("\x1b[?25h", end="")
         except KeyboardInterrupt:
-            # If the user interrupts execution; exit silently without error
-            exit(0)
+            return 1
         finally:
             failed.append(link)
 
     if failed:
-        with open("failed_links.txt", "w") as f:
-            for i in failed:
-                f.write(i + "\n")
+       return failed
+
+    return 0
 
 
-def from_file(filename: str) -> typing.List[str]:
-    links: typing.List[str] = []
+def from_file(filename: str) -> List[str]:
+    links: List[str] = []
 
     try:
         with open(filename, "r") as input_file:
@@ -65,13 +65,12 @@ def from_file(filename: str) -> typing.List[str]:
         print(err)
         exit(1)
 
-    for l in links:
-        print(l)
-    print(type(links))
     return links
 
 
-def main(argv: typing.List) -> None:
+def main(argv: List) -> None:
+    result: Union[List[str], int] = None
+
     parser = argparse.ArgumentParser(description='Download a list of videos')
     parser.add_argument('-F', metavar='FILE', type=str,
                         help='read a list of videos from a file')
@@ -93,12 +92,32 @@ def main(argv: typing.List) -> None:
             print("ytdl-wrapper: error: cannot read from both file and STDIN")
             exit(1)
         # Otherwise, get the media files pointed to by args.input_uris
-        get_videos(args.input_uris, args.f, args.o, args.restrict_filenames)
+        result = get_videos(args.input_uris, args.f, args.o,
+                            args.restrict_filenames)
     elif args.F is None:  # If args.input_uris is empty and args.F is None
         print("ytdl-wrapper: error: no input URIs provided")
         exit(1)
     else:  # If args.input_uris is empty and args.F is *not* None
-        get_videos(from_file(args.F), args.f, args.o, args.restrict_filenames)
+        result = get_videos(from_file(args.F), args.f, args.o,
+                            args.restrict_filenames)
+
+    if isinstance(result, int):
+        exit(result)
+    elif isinstance(result, list):
+        if result:
+            n_failed = "{} URI(s) failed to download"
+            save = ", save a list to disk? (y/n): "
+            write_failed = input(n_failed.format(len(result)) + save)
+
+            if write_failed.lower() == "y":
+                filename = input("Save as:")
+                with open(filename, "w") as f:
+                    for i in result:
+                        f.write(i + "\n")
+            else:
+                exit(0)
+    else:
+        exit(127)
 
 
 main(sys.argv[1:])
