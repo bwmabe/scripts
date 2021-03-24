@@ -13,26 +13,38 @@ def get_videos(links: typing.List[str], format_options: str = "",
     failed: typing.List[str] = []
     base_command = "youtube-dl"
 
+    # Pass video formatting options to youtube-dl if they were defined
     if format_options:
         base_command += ' -f "{}" '.format(format_options)
 
+    # Pass title formatting options to youtube-dl if they were defined
     if title_options:
         base_command += ' -o "{}" '.format(title_options)
 
+    # Pass '--restrict_filenames' to youtube-dl if it was specified
     if restrict_filenames:
         base_command += ' --restrict_filenames '
 
     for link in links:
-        command = base_command + '"' + link + '"'
+        command = base_command + ' "' + link + '" '
         print('Getting "{}"...'.format(link))
         try:
             with sp.Popen(command,
                           stdout=sp.PIPE,
                           universal_newlines=True,
                           shell=True) as process:
-                for line in process.stdout:
-                    print(str(line[:-1]), end="\r")
+                if process.stdout is not None:
+                    # Prints the ANSI escape code to hide the cursor
+                    print("\x1b[?25l", end="")
+                    try:
+                        # Print stdout output from the youtube-dl process
+                        for line in process.stdout:
+                            print("\r" + str(line.rstrip()), end="")
+                    finally:
+                        # unhide the cursor if the above loop fails somehow
+                        print("\x1b[?25h", end="")
         except KeyboardInterrupt:
+            # If the user interrupts execution; exit silently without error
             exit(0)
         finally:
             failed.append(link)
@@ -43,11 +55,20 @@ def get_videos(links: typing.List[str], format_options: str = "",
                 f.write(i + "\n")
 
 
-def from_file(filename: str, format_options: str = "", title_options: str = "",
-              restrict_filenames: bool = False) -> None:
-    with open(filename, "r") as input_file:
-        uris = input_file.read.split()
-        get_videos(uris, format_options, title_options, restrict_filenames)
+def from_file(filename: str) -> typing.List[str]:
+    links: typing.List[str] = []
+
+    try:
+        with open(filename, "r") as input_file:
+            links = input_file.read().rstrip().split()
+    except Exception as err:
+        print(err)
+        exit(1)
+
+    for l in links:
+        print(l)
+    print(type(links))
+    return links
 
 
 def main(argv: typing.List) -> None:
@@ -77,7 +98,7 @@ def main(argv: typing.List) -> None:
         print("ytdl-wrapper: error: no input URIs provided")
         exit(1)
     else:  # If args.input_uris is empty and args.F is *not* None
-        from_file(args.F, args.f, args.o, args.restrict_filenames)
+        get_videos(from_file(args.F), args.f, args.o, args.restrict_filenames)
 
 
 main(sys.argv[1:])
