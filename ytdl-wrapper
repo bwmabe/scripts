@@ -13,6 +13,10 @@ def get_videos(links: List[str], format_options: str = "",
     failed: List[str] = []
     base_command = "youtube-dl"
 
+    # Pass '--restrict-filenames' to youtube-dl if it was specified
+    if restrict_filenames:
+        base_command += ' --restrict-filenames '
+
     # Pass video formatting options to youtube-dl if they were defined
     if format_options:
         base_command += ' -f "{}" '.format(format_options)
@@ -20,10 +24,6 @@ def get_videos(links: List[str], format_options: str = "",
     # Pass title formatting options to youtube-dl if they were defined
     if title_options:
         base_command += ' -o "{}" '.format(title_options)
-
-    # Pass '--restrict_filenames' to youtube-dl if it was specified
-    if restrict_filenames:
-        base_command += ' --restrict_filenames '
 
     for link in links:
         command = base_command + ' "' + link + '" '
@@ -43,14 +43,14 @@ def get_videos(links: List[str], format_options: str = "",
                             print("\r" + string, end="")
                     finally:
                         # unhide the cursor if the above loop fails somehow
-                        print("\x1b[?25h", end="")
+                        print("\x1b[?25h")
         except KeyboardInterrupt:
             return 1
-        finally:
+        except Exception:
             failed.append(link)
 
-    if failed:
-       return failed
+    if len(failed) >= 1:
+        return failed
 
     return 0
 
