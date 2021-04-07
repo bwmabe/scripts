@@ -77,9 +77,9 @@ def main(argv: list) -> None:
         exit(1)
 
     if args.length:
-        print(actions[args.cmd](args.length))
+        print(actions[args.cmd](args.length[0]), end="")
     else:
-        print(actions[args.cmd]())
+        print(actions[args.cmd](), end="")
 
 if __name__ == "__main__":
     main(sys.argv[1:])
