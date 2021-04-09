@@ -14,8 +14,28 @@ A simple command line calculator that uses python; takes input as a quoted strin
 1.0
 ```
 
+### copy-videos-to-phone.sh
+Copies a list of files (not just videos!) to an Android phone connected via USB over ADB.
+
+### cpu-temps.py
+prints the temperatures of each CPU core. includes, min, max, and a rolling average
+
+### dg_scraper.py
+used to download multiple files on a direct-download site instead of clicking on each button individually
+
+### ebooks.sh
+Batch converts ebooks using Calibre's `ebook-convert` command
+
 ### fix-discord.sh
 Fixes an issue with Discord not respecting default browser settings on linux sometimes. Adapted from [here](https://old.reddit.com/r/discordapp/comments/89c881/default_web_browser_setting_not_respected_by/)
+
+### gen-password.py
+Generates either passwords made from random words or characters. 
+
+```
+usage: gen-password.py CMD [--length LENGTH]
+where CMD is either 'words' or 'chars'
+```
 
 ### iommu.sh
 Assists with Identifying IOMMU Groups on Linux
