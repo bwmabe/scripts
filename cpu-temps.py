@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import json
 import curses
+import asyncio
 import subprocess as sp
 
+
 from time import sleep
-from datetime import datetime
 from collections import deque
 
 
@@ -19,10 +20,6 @@ class Core():
         self.min_temp = current_temp
         self.temps = deque()
         self.temps.append(current_temp)
-
-
-    def __repr__(self):
-        return f"Core{self.number}:\n\tcurrent: {self.temp}\n\t    min: {self.min_temp}\n\t    max: {self.max_temp}\n\t average: {self.average}"
 
 
     def report(self):
@@ -63,7 +60,6 @@ class CPU():
                         for label, temp in readings.items():
                             if "_input" in label:
                                 self.cores.append(Core(number, temp))
-        self.last_update = datetime.now()
 
 
     def poll(self):
@@ -76,29 +72,29 @@ class CPU():
 
 
     def update(self):
-        if (datetime.now() - self.last_update).total_seconds() > 1:
-            poll_dump = self.poll()
-            for interface, sensors in poll_dump.items():
-                for device, readings in sensors.items():
-                    if type(readings) is dict:
-                        if "Core" in device:
-                            number = int(device.split()[-1])
-                            for label, temp in readings.items():
-                                if "_input" in label:
-                                    self.cores[number].update(temp)
-            self.last_update = datetime.now()
+        poll_dump = self.poll()
+        for interface, sensors in poll_dump.items():
+            for device, readings in sensors.items():
+                if type(readings) is dict:
+                    if "Core" in device:
+                        number = int(device.split()[-1])
+                        for label, temp in readings.items():
+                            if "_input" in label:
+                                self.cores[number].update(temp)
          
-
-    def print_readings(self):
-        for core in self.cores:
-            print(core)
-
 
     def report(self):
         core_report = list()
         for core in self.cores:
             core_report.append(core.report())
         return core_report
+
+
+    async def begin(self, queue):
+        while True:
+            self.update()
+            await queue.put(self.report())
+            await asyncio.sleep(1)
 
 
 class Screen():
@@ -121,31 +117,42 @@ class Screen():
         curses.endwin()
 
 
-def main():
-    cpu = CPU()
+async def display_handler(queue):
     with Screen() as scr:
         while True:
             try:
-                cpu.update()
+                raw_data = await queue.get()
                 data = ""
-                for core in cpu.report():
+                for core in raw_data:
                     _head = f"Core{core['number']}:\n"
                     _temp = f"\tTemp: {core['temp']}\n"
                     _tmax = f"\t Max: {core['max']}\n"
                     _tmin = f"\t Min: {core['min']}\n"
                     _tavg = f"\t Avg: {core['avg']:.1f}\n"
                     data += _head + _temp + _tmax + _tmin + _tavg
-                scr.addstr(0, 0, data)
-                scr.refresh()
+                if data != "":
+                    scr.addstr(0, 0, data)
+                    scr.refresh()
                 keypress = scr.getkey()
                 if keypress == 'q':
                     break
             except curses.error:
                 continue
             except KeyboardInterrupt:
-                print("user keyboard interrupt")
                 break
 
 
+async def main():
+    queue = asyncio.Queue()
+    cpu = CPU()
+    read_cpu = asyncio.create_task(cpu.begin(queue))
+    print_data = asyncio.create_task(display_handler(queue))
+    await queue.join()
+    await asyncio.gather(print_data)
+    read_cpu.cancel()
 
-main()
+
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    pass
