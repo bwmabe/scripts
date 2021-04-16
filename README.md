@@ -40,6 +40,9 @@ where CMD is either 'words' or 'chars'
 ### iommu.sh
 Assists with Identifying IOMMU Groups on Linux
 
+### lynxchan\_media\_downloader.py
+A script that downloads *all* the media from a a thread on a site running the `lynxchan` image board software
+
 ### manga_zipper.sh
 Used to zip individual chapters of downloaded manga into `.cbz` files
 
