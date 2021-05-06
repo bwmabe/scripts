@@ -49,5 +49,8 @@ Used to zip individual chapters of downloaded manga into `.cbz` files
 ### minecraft-color-text.py
 Formats text so that it will be rainbow in Minecraft chat.
 
+### screenshot-manager.sh
+Watches my home directory for new screenshots and then crops them so only the right monitor is captured. Also moves them to `~/Screenshots`.
+
 ### ytdl-wrapper
 A wrapper script written in Python around my common use-cases for `youtube-dl`
