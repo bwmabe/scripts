@@ -54,3 +54,7 @@ Watches my home directory for new screenshots and then crops them so only the ri
 
 ### ytdl-wrapper
 A wrapper script written in Python around my common use-cases for `youtube-dl`
+
+### zippy.py
+A script that leverages Selenium, Geckodriver, and asyncio to download files from multiple Zippyshare pages. In need of serious cleanup to make it more usable.
+
