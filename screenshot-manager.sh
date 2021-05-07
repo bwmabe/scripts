@@ -7,7 +7,7 @@ inotifywait -m ~ -e create -e moved_to |
 	do
 		if [[ $filename =~ $image_regex ]]
 		then
-			sleep 0.5s
+			sleep 1.5s
 			width=$(identify -format "%w" "$dir$filename")
 			# height=$(identify -format "%h" "$dir$filename")
 			if [[ $width -eq 3840 ]]
