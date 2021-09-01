@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 class Image():
     def __init__(self, tld, link, filename):
         self.filename = filename
-        self.link = f"{tld}/{link}"
+        self.link = f"{tld}{link[1:]}"
 
 
 async def get_images(thread_link, tld, output_directory=None):
@@ -31,7 +31,7 @@ async def get_images(thread_link, tld, output_directory=None):
                 else:
                     filename = image.filename
                 with open(filename, 'wb') as img_out:
-                    print(f"Downloading '{filename}'...")
+                    print(f"Downloading '{filename}' from {image.link}...")
                     img_out.write(await image_response.read())
 
 
