@@ -18,6 +18,8 @@ async def get_images(thread_link, tld, output_directory=None):
             soup = BeautifulSoup(await thread.text(), 'html.parser')
             for a in soup.find_all('a', class_="originalNameLink"):
                 images.append(Image(tld, a['href'], a['download']))
+        image_count = len(images)
+        image_index = 1
         for image in images:
             async with session.get(image.link) as image_response:
                 if output_directory is not None:
@@ -31,17 +33,26 @@ async def get_images(thread_link, tld, output_directory=None):
                 else:
                     filename = image.filename
                 with open(filename, 'wb') as img_out:
-                    print(f"Downloading '{filename}' from {image.link}...")
+                    print(f"[{image_index}/{image_count}] Downloading '{filename}' from '{image.link}'...")
                     img_out.write(await image_response.read())
+                image_index += 1
 
 
 async def main(argv):
-    if argv[1] == "help" or argv[1] == "-h":
+    try:
+        if argv[1] == "help" or argv[1] == "-h":
+            print("usage: lynxchan_media_downloader [thread_link] [directory]")
+            print("specifying an output directory is optional")
+            print("downloads all media from a thread on a site running the")
+            print("'lynxchan' image board software")
+            exit(0)
+    except IndexError:
+        print("ERROR: no arguments provided")
         print("usage: lynxchan_media_downloader [thread_link] [directory]")
         print("specifying an output directory is optional")
         print("downloads all media from a thread on a site running the")
         print("'lynxchan' image board software")
-        exit(0)
+        exit(1)
     thread_link = argv[1]
     tld = f"https://{thread_link.split('/')[2]}/"
     output_directory = None
