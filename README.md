@@ -3,6 +3,9 @@ misc scripts that aren't important enough for their own repo
 
 ## What They Are
 
+### ape2flac.py
+A script that converts all `.ape` files in the current directory (and subdirectories!) into `.flac` files.
+
 ### calc
 A simple command line calculator that uses python; takes input as a quoted string. 
 
