@@ -11,14 +11,18 @@ for root, branches, leaves in os.walk('.'):
 for file in files:
     if '.ape' in file:
         cmd = ['ffmpeg', '-y', '-i', file, file.split('.ape')[0] + '.flac']
+        success = False
         try:
             print(' '.join(cmd))
-            conversion_job = run(cmd, stdout=PIPE, stderr=PIPE, check=True)
+            conversion_job = run(cmd, capture_output=True, check=True)
+            success = True
         except Exception as err:
             print("----\nUnknown Error\n--")
             print(err)
             print("--\nCommand was:")
             print(' '.join(cmd))
             print("----")
-
+        if success:
+            del_cmd = ['rm', file]
+            deletion_job = run(del_cmd, capture_output=True, check=True)
 
