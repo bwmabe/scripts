@@ -32,6 +32,9 @@ Batch converts ebooks using Calibre's `ebook-convert` command
 ### fix-discord.sh
 Fixes an issue with Discord not respecting default browser settings on linux sometimes. Adapted from [here](https://old.reddit.com/r/discordapp/comments/89c881/default_web_browser_setting_not_respected_by/)
 
+### flacsplit.py
+Recursively searches directories for `flac + cue` rips to split them into one `.flac` per track using `shntool` and `cuetools`. Sometimes makes mistakes when applying metadata. Creates a backup of the original single-file `.flac` and preserves the cuesheet to allow for manual correction.
+
 ### gen-password.py
 Generates either passwords made from random words or characters. 
 
